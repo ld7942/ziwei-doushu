@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ZiweiChart, Palace } from '@/lib/ziwei/types';
 import type { TimeView } from './TimeNav';
+import { chartToMarkdown, chartFilename, downloadMarkdown, type ChatMessage as ExportChatMessage } from '@/lib/ziwei/export';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -346,30 +347,61 @@ ${selectedSiHua.starName}化${selectedSiHua.siHua}落在【${palaceName}】，�
     sendMessage(input);
   };
 
+  const handleExport = () => {
+    const visibleMessages: ExportChatMessage[] = messagesRef.current
+      .filter(m => !m.hidden || m.role === 'assistant')
+      .map(m => ({ role: m.role, content: m.content }));
+    const md = chartToMarkdown(chart, visibleMessages);
+    downloadMarkdown(chartFilename(chart), md);
+  };
+
   return (
     <div className="flex flex-col h-full rounded-xl overflow-hidden card-glass">
 
       {/* ── Topic buttons ── */}
       <div className="flex-shrink-0 px-2 pt-2.5 pb-2" style={{ borderBottom: '1px solid var(--t-border)' }}>
-        <div className="grid grid-cols-6 gap-1">
-          {TOPICS.map(t => {
-            const isActive = activeTopic === t.key;
-            return (
-              <button
-                key={t.key}
-                onClick={() => handleTopicClick(t.key)}
-                disabled={loading}
-                className="py-1.5 text-[10px] font-medium rounded-lg transition-all duration-150 disabled:opacity-40"
-                style={{
-                  background: isActive ? 'rgba(212,168,67,0.12)' : 'transparent',
-                  border: `1px solid ${isActive ? 'rgba(212,168,67,0.3)' : 'var(--t-border)'}`,
-                  color: isActive ? 'var(--t-gold)' : 'var(--t-faint)',
-                }}
-              >
-                {t.label}
-              </button>
-            );
-          })}
+        <div className="flex items-center gap-2">
+          <div className="grid grid-cols-6 gap-1 flex-1">
+            {TOPICS.map(t => {
+              const isActive = activeTopic === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => handleTopicClick(t.key)}
+                  disabled={loading}
+                  className="py-1.5 text-[10px] font-medium rounded-lg transition-all duration-150 disabled:opacity-40"
+                  style={{
+                    background: isActive ? 'rgba(212,168,67,0.12)' : 'transparent',
+                    border: `1px solid ${isActive ? 'rgba(212,168,67,0.3)' : 'var(--t-border)'}`,
+                    color: isActive ? 'var(--t-gold)' : 'var(--t-faint)',
+                  }}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            onClick={handleExport}
+            disabled={loading}
+            title="导出为 Markdown 文件"
+            className="px-2.5 py-1.5 text-[10px] rounded-lg transition-all duration-150 disabled:opacity-40 whitespace-nowrap"
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--t-border)',
+              color: 'var(--t-faint)',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(212,168,67,0.4)';
+              (e.currentTarget as HTMLElement).style.color = 'var(--t-gold)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.borderColor = 'var(--t-border)';
+              (e.currentTarget as HTMLElement).style.color = 'var(--t-faint)';
+            }}
+          >
+            ⬇ 导出
+          </button>
         </div>
       </div>
 

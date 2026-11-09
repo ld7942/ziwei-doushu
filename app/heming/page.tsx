@@ -6,6 +6,7 @@ import { formToBirthInfo } from '@/lib/ziwei/share';
 import { generateChart as buildChart } from '@/lib/ziwei/algorithm';
 import type { BirthInfo, ZiweiChart } from '@/lib/ziwei/types';
 import { useTheme } from '@/components/ThemeProvider';
+import { hemingToMarkdown, downloadMarkdown } from '@/lib/ziwei/export';
 
 // ─── AiContent 渲染器（与 InsightPanel 一致）────────────────
 function AiContent({ text, streaming }: { text: string; streaming?: boolean }) {
@@ -148,6 +149,15 @@ export default function HemingPage() {
     }
   }, [formA, formB, generateChart]);
 
+  const handleExport = () => {
+    if (!chartA || !chartB || !analysis.trim()) return;
+    const md = hemingToMarkdown(chartA, chartB, analysis, question || undefined);
+    const a = chartA.birthInfo.gender === 'male' ? '男' : '女';
+    const b = chartB.birthInfo.gender === 'male' ? '男' : '女';
+    const ts = new Date().toISOString().slice(0, 10);
+    downloadMarkdown(`紫微合盘_${a}-${b}_${ts}.md`, md);
+  };
+
   const cardStyle = {
     background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.9)',
     border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(200,160,60,0.2)'}`,
@@ -237,6 +247,33 @@ export default function HemingPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: (analysis || analyzing) ? '20px' : '24px' }}>
             <span style={{ color: 'var(--ac)', opacity: 0.6 }}>◉</span>
             <span style={{ fontSize: '11px', letterSpacing: '0.3em', color: 'var(--tx-3)' }}>合盘分析 · HEMING</span>
+            {analysis && (
+              <>
+                <div style={{ flex: 1 }} />
+                <button
+                  onClick={handleExport}
+                  disabled={analyzing}
+                  style={{
+                    fontSize: '12px', padding: '6px 14px',
+                    borderRadius: 'var(--r-pill)',
+                    border: '1px solid var(--bdr-med)',
+                    background: 'transparent', color: 'var(--tx-2)',
+                    cursor: analyzing ? 'not-allowed' : 'pointer',
+                    transition: 'color 0.15s, border-color 0.15s',
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.color = 'var(--ac)';
+                    (e.currentTarget as HTMLElement).style.borderColor = 'var(--ac)';
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.color = 'var(--tx-2)';
+                    (e.currentTarget as HTMLElement).style.borderColor = 'var(--bdr-med)';
+                  }}
+                >
+                  ⬇ 导出 MD
+                </button>
+              </>
+            )}
           </div>
 
           {/* 状态分支 */}
